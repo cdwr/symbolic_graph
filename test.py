@@ -9,9 +9,6 @@ def edge2Bool(i, j):
     jLogic = ""
     iBin = '{0:05b}'.format(i)
     jBin = '{0:05b}'.format(j)
-
-    # iterate over the bits in binary i to create xFormula
-    # produces "x[i] & ".. to match pyEDA style expression and indexed vars
     
     for digit in iBin:
         if int(digit):
@@ -31,7 +28,7 @@ def edge2Bool(i, j):
         c += 1     
     jLogic = jLogic[:-3] 
 
-    # create a new Formula with both x and y expressions
+    # create final Formula with both i and j formulas
     edgeBool = f"({iLogic}) & ({jLogic})"
 
     return edgeBool
@@ -40,12 +37,10 @@ def joinEdgeList(edgeList):
 
     jointForm= ""
 
-    # Add the OR between each formula
+    # Add the ORs
     for edgeForm in edgeList:
         jointForm += f"({edgeForm}) | "
 
-    # Convert the formula string to a pyeda expression
-    # chopping off the extra OR for formatting
     jointForm = pyeda.expr(jointForm[:-3])
 
     return jointForm
@@ -99,12 +94,15 @@ if __name__ == '__main__':
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
 
     #build graph edges
-    edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32))]
+    print("Building edges...")
+    edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
 
+    print("Joining edges...")
     function = joinEdgeList(edgeList)
 
 
     if(render_graph):
+        print("Attempting to render graph from joined edge formula...")
         try:
             renderGraph(function)
         except:
@@ -114,7 +112,7 @@ if __name__ == '__main__':
     print("Converting function into BDD")
     BDD = pyeda.expr2bdd(function)
 
-    # Compute the transitive closure R*
+    # Compute the transitive closure
     print("Performing Transitive Closure")
     BDD_trans = doTC(BDD) 
     neg_BDD_trans = ~BDD_trans
@@ -125,4 +123,4 @@ if __name__ == '__main__':
     result = ~result
 
     # Finally, assert the result
-    print(f"\nfor all nodes i, j ∈ S,  i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
+    print(f"\n→for all nodes i, j ∈ S,  i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
