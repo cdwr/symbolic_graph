@@ -75,19 +75,19 @@ def doTC(R):
     
     # Transitive closure alg
     H = R
-    temp = None
+    Hprime = None
 
     while True:
 
-        temp = H
+        Hprime = H
         
         ff1 = H.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 })
         ff2 = R.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 }) 
         ff3 = ff1 & ff2
-        H = temp | ff3
+        H = Hprime | ff3
         H = H.smoothing((k0, k1, k2, k3, k4))
 
-        if H.equivalent(temp):
+        if H.equivalent(Hprime):
             break
 
     return H
@@ -101,18 +101,19 @@ def renderGraph(func):
         import graphviz
         from graphviz import Digraph
         import pydot
-    except Exception as e:
-        print("Failed to import dependencies. No graph rendering for you! <" + type(e) + ">")
-        return
 
-    graph = pydot.graph_from_dot_data(func.to_dot())[0]
-    graph.create_png('graph.png')
+        graph = pydot.graph_from_dot_data(func.to_dot())[0]
+        graph.create_png('graph.png')
+    except Exception as e:
+        print("Failed to graph. No graph rendering for you! <" + type(e) + ">")
+
 
 
 if __name__ == '__main__':
 
     i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
+    k0, k1, k2, k3, k4 = pyeda.bddvars('k', 5)
 
     primes = list(filter(is_prime, range(0,32)))
     evens = list(filter(lambda x: x % 2 == 0, range(0,32)))
@@ -135,17 +136,32 @@ if __name__ == '__main__':
         except:
             print("Failed to render graph :(")
 
-    print("Converting boolean functions into BDDs R, P, and E")
-    R = pyeda.expr2bdd(rForms)
-    P = pyeda.expr2bdd(pForms)
-    E = pyeda.expr2bdd(eForms)
+    print("Converting boolean functions into BDDs RR, PP, and EE")
+    RR = pyeda.expr2bdd(rForms)
+    PP = pyeda.expr2bdd(pForms)
+    EE = pyeda.expr2bdd(eForms)
 
-    print("Performing Transitive Closure on R")
-    Rs = doTC(R) 
-    neg_Rs = ~Rs
+    print("Computing BDD RR2 from BDD RR")
+    try:
+        RR2 = RR.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 }) & RR.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 })
+    except Exception as e:
+        print("\tError: " + str(e))
+        RR2 = RR
 
-    print("Smoothing... ")
-    result = neg_Rs.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
+    print("Performing Transitive Closure on RR2")
+    RR2s = doTC(RR2) 
+    neg_RR2s = ~RR2s
+
+    print("Finalizing... ")
+    result = neg_RR2s.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
+
+    try:
+        JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
+        QQ = ~( ~( JJ | ~PP).smoothing((i0, i1, i2, i3, i4)) )
+        print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
+    except Exception as e:
+        print("\tError: " + str(e))
+        
 
     result = ~result
 
