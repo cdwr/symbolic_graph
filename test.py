@@ -50,7 +50,7 @@ def joinEdgeList(edgeList):
 
     return jointForm
 
-def computeTransitiveClosure(R):
+def doTC(R):
     
     i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
@@ -101,23 +101,22 @@ if __name__ == '__main__':
     #build graph edges
     edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32))]
 
-    # greate bool function F to represent graph
     function = joinEdgeList(edgeList)
 
-    print(type(function))
-    print(str(function))
-    print(type(function.to_dot()))
-    print(str(function.to_dot()))
-    if(render_graph):
-        renderGraph(function)
 
-    # Convert F into BDD: R 
-    print("Converting F to a BDD, R..")
+    if(render_graph):
+        try:
+            renderGraph(function)
+        except:
+            print("Failed to render graph :(")
+
+    # Convert the bool function into a BDD
+    print("Converting function into BDD")
     BDD = pyeda.expr2bdd(function)
 
     # Compute the transitive closure R*
     print("Performing Transitive Closure")
-    BDD_trans = computeTransitiveClosure(BDD) 
+    BDD_trans = doTC(BDD) 
     neg_BDD_trans = ~BDD_trans
 
     print("Smoothing... ")
@@ -126,4 +125,4 @@ if __name__ == '__main__':
     result = ~result
 
     # Finally, assert the result
-    print(f"\nfor all i, j ∈ S, can node i can reach node j in one or more steps in G?: {result.equivalent(True)}\n")
+    print(f"\nfor all nodes i, j ∈ S,  i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
