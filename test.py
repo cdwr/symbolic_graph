@@ -1,4 +1,7 @@
 import pyeda.inter as pyeda
+from functools import reduce
+from math import sqrt
+from itertools import count, islice
 
 render_graph = True
 
@@ -32,6 +35,25 @@ def edge2Bool(i, j):
     edgeBool = f"({iLogic}) & ({jLogic})"
 
     return edgeBool
+
+
+def num2Bool(i):
+
+    c = 0
+    iLogic = ""
+    iBin = '{0:05b}'.format(i)
+    
+    for digit in iBin:
+        if int(digit):
+            iLogic += "i[" + str(c) + "] & "
+        else:
+            iLogic += "~i[" + str(c) + "] & "
+        c += 1    
+    iLogic = iLogic[:-3]
+
+    # create final Formula with both i and j formulas
+
+    return iLogic
 
 def joinEdgeList(edgeList):
 
@@ -70,6 +92,9 @@ def doTC(R):
 
     return H
 
+def is_prime(n):
+    return n > 1 and all(n % i for i in islice(count(2), int(sqrt(n)-1)))
+
 
 def renderGraph(func):
     try:
@@ -93,34 +118,56 @@ if __name__ == '__main__':
     i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
 
+    primes = list(filter(is_prime, range(0,32)))
+    evens = list(filter(lambda x: x % 2 == 0, range(0,32)))
+
+    try:
+        pList = [num2Bool(p) for p in primes]
+        eList = [num2Bool(e) for e in evens]
+
+        pForms = joinEdgeList(pList)
+        eForms = joinEdgeList(eList)
+
+        P = pyeda.expr2bdd(pForms)
+        E = pyeda.expr2bdd(eForms)
+
+        print("Success!")
+        print(str(P))
+        print(str(E))
+
+    except Exception as e:
+        print("!!!!!\n" + str(e))
+
+
     #build graph edges
-    print("Building edges...")
+    print("Building edges for G...")
     edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
 
-    print("Joining edges...")
-    function = joinEdgeList(edgeList)
+    print("Joining edges for G...")
+    Gforms = joinEdgeList(edgeList)
 
 
     if(render_graph):
         print("Attempting to render graph from joined edge formula...")
         try:
-            renderGraph(function)
+            renderGraph(Gforms)
         except:
             print("Failed to render graph :(")
 
     # Convert the bool function into a BDD
     print("Converting function into BDD")
-    BDD = pyeda.expr2bdd(function)
+    R = pyeda.expr2bdd(Gforms)
 
     # Compute the transitive closure
     print("Performing Transitive Closure")
-    BDD_trans = doTC(BDD) 
-    neg_BDD_trans = ~BDD_trans
+    Rs = doTC(R) 
+    neg_Rs = ~Rs
 
     print("Smoothing... ")
-    result = neg_BDD_trans.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
+    result = neg_Rs.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
 
     result = ~result
 
     # Finally, assert the result
-    print(f"\n→for all nodes i, j ∈ S,  i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
+    #print(f"\n → for all nodes i, j ∈ S,  i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
+    print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
