@@ -1,46 +1,39 @@
 import pyeda.inter as pyeda
 
-def edgeToBooleanFormula(i, j):
+def edge2Bool(i, j):
 
-    index = 0
-    xFormula = ""
-    yFormula = ""
-    xBin = '{0:05b}'.format(i)
-    yBin = '{0:05b}'.format(j)
+    c = 0
+    iLogic = ""
+    jLogic = ""
+    iBin = '{0:05b}'.format(i)
+    jBin = '{0:05b}'.format(j)
 
     # iterate over the bits in binary i to create xFormula
     # produces "x[i] & ".. to match pyEDA style expression and indexed vars
-    for digit in xBin:
-        
-        if int(digit) == 0:
-            xFormula += f"~x[{index}] & "
-        elif int(digit) == 1:
-            xFormula += f"x[{index}] & "
-        
-        index += 1    
-
-    # reset the indexer
-    index = 0
-
-    # iterate over the bits in binary j to formulate the yFormula
-    for digit in yBin:
-        
-        if int(digit) == 0:
-            yFormula += f"~y[{index}] & "
-        elif int(digit) == 1:
-            yFormula += f"y[{index}] & "
-        
-        index += 1  
     
-    # pop the last 3 chars from the expressions
-    xFormula = xFormula[:-3]
-    yFormula = yFormula[:-3]
+    for digit in iBin:
+        if int(digit):
+            iLogic += "i[" + str(c) + "] & "
+        else:
+            iLogic += "~i[" + str(c) + "] & "
+        c += 1    
+    iLogic = iLogic[:-3]
+
+    c = 0
+
+    for digit in jBin:
+        if int(digit):
+            jLogic += "j[" + str(c) + "] & "
+        else:
+            jLogic += "~j[" + str(c) + "] & "
+        c += 1     
+    jLogic = jLogic[:-3] 
 
     # create a new Formula with both x and y expressions
-    E_i_j = f"({xFormula}) & ({yFormula})"
+    edgeBool = f"({iLogic}) & ({jLogic})"
 
 
-    return E_i_j
+    return edgeBool
 
 def joinEdgeFormulaList(edgeFormulaList):
 
@@ -59,34 +52,34 @@ def joinEdgeFormulaList(edgeFormulaList):
 
 def computeTransitiveClosure(R):
     
-    x0, x1, x2, x3, x4 = pyeda.bddvars('x', 5)
-    y0, y1, y2, y3, y4 = pyeda.bddvars('y', 5)
-    z0, z1, z2, z3, z4 = pyeda.bddvars('z', 5)
+    i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
+    j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
+    k0, k1, k2, k3, k4 = pyeda.bddvars('k', 5)
     
     # Transitive closure alg
     H = R
-    HPrime = None
+    temp = None
 
     while True:
 
-        HPrime = H
+        temp = H
         
         # H
-        ff1 = H.compose({y0:z0, y1:z1, y2:z2, y3:z3, y4:z4 })
+        ff1 = H.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 })
 
         # R
-        ff2 = R.compose({x0:z0, x1:z1, x2:z2, x3:z3, x4:z4 }) 
+        ff2 = R.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 }) 
 
         # H x R
         ff3 = ff1 & ff2
 
         # H = H v (H x R)
-        H = HPrime | ff3
+        H = temp | ff3
 
         # apply smoothing over all z BDD Vars to rid them from the graph
-        H = H.smoothing((z0, z1, z2, z3, z4))
+        H = H.smoothing((k0, k1, k2, k3, k4))
 
-        if H.equivalent(HPrime):
+        if H.equivalent(temp):
             break
 
     return H
@@ -95,30 +88,33 @@ def computeTransitiveClosure(R):
 if __name__ == '__main__':
 
     
-    edgeFormulaList = []
+    edgeList = []
 
-    x0, x1, x2, x3, x4 = pyeda.bddvars('x', 5)
-    y0, y1, y2, y3, y4 = pyeda.bddvars('y', 5)
+    i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
+    j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
 
     print("Building the graph, G..")
     # for (i, j) in G:
-    for i in range(0, 32):
 
-        for j in range(0,32):
+    edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32))]
 
-            if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32)):
+    # for i in range(0, 32):
 
-                # send the edge to to formula creation function
-                newFormula = edgeToBooleanFormula(i, j)
+    #     for j in range(0,32):
 
-                # add the formula to the list
-                edgeFormulaList.append(newFormula)
-    print("Done")
+    #         if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32)):
+
+    #             # send the edge to to formula creation function
+    #             newFormula = edgeToBooleanFormula(i, j)
+
+    #             # add the formula to the list
+    #             edgeFormulaList.append(newFormula)
+    # print("Done")
 
     
     # Create a big boolean expression, F, for the entire graph G
     print("Building the boolean expression, F, from the graph G..")
-    F = joinEdgeFormulaList(edgeFormulaList)
+    F = joinEdgeFormulaList(edgeList)
     print("Done")
 
     # Convert F into BDD: R 
