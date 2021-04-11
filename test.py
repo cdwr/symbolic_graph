@@ -101,19 +101,15 @@ def renderGraph(func):
         import graphviz
         from graphviz import Digraph
         import pydot
-    except:
-        print("Failed to import dependencies. No graph rendering for you!")
+    except Exception as e:
+        print("Failed to import dependencies. No graph rendering for you! <" + type(e) + ">")
         return
 
     graph = pydot.graph_from_dot_data(func.to_dot())[0]
     graph.create_png('graph.png')
 
 
-# MAIN, not gucci
 if __name__ == '__main__':
-
-    
-    edgeList = []
 
     i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
@@ -121,45 +117,30 @@ if __name__ == '__main__':
     primes = list(filter(is_prime, range(0,32)))
     evens = list(filter(lambda x: x % 2 == 0, range(0,32)))
 
-    try:
-        pList = [num2Bool(p) for p in primes]
-        eList = [num2Bool(e) for e in evens]
 
-        pForms = joinEdgeList(pList)
-        eForms = joinEdgeList(eList)
+    print("Building boolean expressions...")
+    rList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
+    pList = [num2Bool(p) for p in primes]
+    eList = [num2Bool(e) for e in evens]
 
-        P = pyeda.expr2bdd(pForms)
-        E = pyeda.expr2bdd(eForms)
-
-        print("Success!")
-        print(str(P))
-        print(str(E))
-
-    except Exception as e:
-        print("!!!!!\n" + str(e))
-
-
-    #build graph edges
-    print("Building edges for G...")
-    edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
-
-    print("Joining edges for G...")
-    Gforms = joinEdgeList(edgeList)
-
+    print("Joining edges for boolean expressions...")
+    rForms = joinEdgeList(rList)
+    pForms = joinEdgeList(pList)
+    eForms = joinEdgeList(eList)
 
     if(render_graph):
-        print("Attempting to render graph from joined edge formula...")
+        print("Attempting to render graph from R formula...")
         try:
-            renderGraph(Gforms)
+            renderGraph(rForms)
         except:
             print("Failed to render graph :(")
 
-    # Convert the bool function into a BDD
-    print("Converting function into BDD")
-    R = pyeda.expr2bdd(Gforms)
+    print("Converting boolean functions into BDDs R, P, and E")
+    R = pyeda.expr2bdd(rForms)
+    P = pyeda.expr2bdd(pForms)
+    E = pyeda.expr2bdd(eForms)
 
-    # Compute the transitive closure
-    print("Performing Transitive Closure")
+    print("Performing Transitive Closure on R")
     Rs = doTC(R) 
     neg_Rs = ~Rs
 
