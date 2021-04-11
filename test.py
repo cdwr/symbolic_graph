@@ -85,7 +85,7 @@ def renderGraph(func):
         print("Failed to import dependencies. No graph rendering for you!")
         return
 
-    graph = Digraph(func.to_dot())
+    graph = pydot.graph_from_dot_data(func.to_dot())[0]
     graph.create_png('graph.png')
 
 
