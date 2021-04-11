@@ -104,6 +104,10 @@ if __name__ == '__main__':
     # greate bool function F to represent graph
     function = joinEdgeList(edgeList)
 
+    print(type(function))
+    print(str(function))
+    print(type(function.to_dot()))
+    print(str(function.to_dot()))
     if(render_graph):
         renderGraph(function)
 
