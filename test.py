@@ -136,7 +136,7 @@ if __name__ == '__main__':
 
     # Then apply smoothing over all BDD vars
     print("Smoothing over all x[0]..x[4] and y[0]..y[4]")
-    result = negRStar.smoothing((x0, x1, x2, x3, x4, y0, y1, y2, y3, y4))
+    result = negRStar.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
     print("Done")
 
     # take the negation of the result
