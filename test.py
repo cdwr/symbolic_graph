@@ -1,5 +1,7 @@
 import pyeda.inter as pyeda
 
+render_graph = True
+
 def edge2Bool(i, j):
 
     c = 0
@@ -32,23 +34,21 @@ def edge2Bool(i, j):
     # create a new Formula with both x and y expressions
     edgeBool = f"({iLogic}) & ({jLogic})"
 
-
     return edgeBool
 
-def joinEdgeFormulaList(edgeFormulaList):
+def joinEdgeList(edgeList):
 
-    jointFormula = ""
+    jointForm= ""
 
     # Add the OR between each formula
-    for edgeFormula in edgeFormulaList:
-        
-        jointFormula += f"({edgeFormula}) | "
+    for edgeForm in edgeList:
+        jointForm += f"({edgeForm}) | "
 
     # Convert the formula string to a pyeda expression
     # chopping off the extra OR for formatting
-    jointFormula = pyeda.expr(jointFormula[:-3])
+    jointForm = pyeda.expr(jointForm[:-3])
 
-    return jointFormula
+    return jointForm
 
 def computeTransitiveClosure(R):
     
@@ -64,25 +64,30 @@ def computeTransitiveClosure(R):
 
         temp = H
         
-        # H
         ff1 = H.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 })
-
-        # R
         ff2 = R.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 }) 
-
-        # H x R
         ff3 = ff1 & ff2
-
-        # H = H v (H x R)
         H = temp | ff3
-
-        # apply smoothing over all z BDD Vars to rid them from the graph
         H = H.smoothing((k0, k1, k2, k3, k4))
 
         if H.equivalent(temp):
             break
 
     return H
+
+
+def renderGraph(func):
+    try:
+        import graphviz
+        from graphviz import Digraph
+        import pydot
+    except:
+        print("Failed to import dependencies. No graph rendering for you!")
+        return
+
+    graph = Digraph(func.to_dot())
+    graph.create_png('graph.png')
+
 
 # MAIN, not gucci
 if __name__ == '__main__':
@@ -93,56 +98,28 @@ if __name__ == '__main__':
     i0, i1, i2, i3, i4 = pyeda.bddvars('i', 5)
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
 
-    print("Building the graph, G..")
-    # for (i, j) in G:
-
+    #build graph edges
     edgeList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32))]
 
-    # for i in range(0, 32):
+    # greate bool function F to represent graph
+    function = joinEdgeList(edgeList)
 
-    #     for j in range(0,32):
-
-    #         if (((i+3) % 32) == (j % 32)) | (((i+7) % 32) == (j % 32)):
-
-    #             # send the edge to to formula creation function
-    #             newFormula = edgeToBooleanFormula(i, j)
-
-    #             # add the formula to the list
-    #             edgeFormulaList.append(newFormula)
-    # print("Done")
-
-    
-    # Create a big boolean expression, F, for the entire graph G
-    print("Building the boolean expression, F, from the graph G..")
-    F = joinEdgeFormulaList(edgeList)
-    print("Done")
+    if(render_graph):
+        renderGraph(function)
 
     # Convert F into BDD: R 
     print("Converting F to a BDD, R..")
-    R = pyeda.expr2bdd(F)
-    print("Done")
+    BDD = pyeda.expr2bdd(function)
 
     # Compute the transitive closure R*
-    print("Computing the transitive closure, R*..")
-    RStar = computeTransitiveClosure(R) 
-    print("Done")
+    print("Performing Transitive Closure")
+    BDD_trans = computeTransitiveClosure(BDD) 
+    neg_BDD_trans = ~BDD_trans
 
+    print("Smoothing... ")
+    result = neg_BDD_trans.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
 
-    # for all i, j ∈ S, node i can reach node j in one or more steps in G
-    # first we negate R*
-    print("Negating the transitive closure, R*..")
-    negRStar = ~RStar
-    print("Done")
-
-    # Then apply smoothing over all BDD vars
-    print("Smoothing over all x[0]..x[4] and y[0]..y[4]")
-    result = negRStar.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
-    print("Done")
-
-    # take the negation of the result
-    print("Negating the result..")
     result = ~result
-    print("Done")
 
     # Finally, assert the result
     print(f"\nfor all i, j ∈ S, can node i can reach node j in one or more steps in G?: {result.equivalent(True)}\n")
