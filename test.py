@@ -12,9 +12,11 @@ def edge2Bool(i, j):
     c = 0
     iLogic = ""
     jLogic = ""
+    #to binary
     iBin = '{0:05b}'.format(i)
     jBin = '{0:05b}'.format(j)
     
+    #create i & expression string
     for digit in iBin:
         if int(digit):
             iLogic += "i[" + str(c) + "] & "
@@ -25,6 +27,7 @@ def edge2Bool(i, j):
 
     c = 0
 
+    #create j & expression string
     for digit in jBin:
         if int(digit):
             jLogic += "j[" + str(c) + "] & "
@@ -38,7 +41,7 @@ def edge2Bool(i, j):
 
     return edgeBool
 
-
+#for 5 bit instead of 10 bit
 def num2Bool(i):
 
     c = 0
@@ -75,7 +78,7 @@ def doTC(R):
     j0, j1, j2, j3, j4 = pyeda.bddvars('j', 5)
     k0, k1, k2, k3, k4 = pyeda.bddvars('k', 5)
     
-    # Transitive closure alg
+    # Transitive closure algorithm
     H = R
     Hprime = None
 
@@ -125,7 +128,7 @@ if __name__ == '__main__':
 
 
     print("Building boolean expressions...")
-    rList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
+    rList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))] #this just makes a list of all pairs that satisfy the condition
     pList = [num2Bool(p) for p in primes]
     eList = [num2Bool(e) for e in evens]
     debug(rList)
@@ -161,7 +164,7 @@ if __name__ == '__main__':
     JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
     QQ = ~( ~( JJ | ~PP).smoothing((i0, i1, i2, i3, i4)) )
     print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
-
+    pickle.dump( JJ, open( "save.p", "wb" ) )
 
     print("\nBONUS: Test a pair! type a pair in the form 'x, y'")
     pair_str = input()
@@ -169,6 +172,13 @@ if __name__ == '__main__':
         x = int(pair_str.split(', ')[0])
         y = int(pair_str.split(', ')[1])
 
+        pairList = [(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
+
+        if (x,y) in pairList and x in primes and y in evens:
+            #another condition needed for checking if it's in RR2s
+            print("Valid pair")
+        else:
+            print("invalid pair")
 
     except Exception as e:
         print(e)
