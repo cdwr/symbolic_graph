@@ -4,7 +4,8 @@ from math import sqrt
 from itertools import count, islice
 import pickle
 
-render_graph = True
+render_graph = False
+debug = True
 
 def edge2Bool(i, j):
 
@@ -109,6 +110,9 @@ def renderGraph(func):
         print("Failed to graph. No graph rendering for you! <" + type(e) + ">")
 
 
+def debug(obj):
+    if debug:
+        print(str(obj))
 
 if __name__ == '__main__':
 
@@ -124,11 +128,13 @@ if __name__ == '__main__':
     rList = [edge2Bool(i,j) for i in range(0,32) for j in range(0,32) if (((i+3) % 32) == (j % 32)) | (((i+8) % 32) == (j % 32))]
     pList = [num2Bool(p) for p in primes]
     eList = [num2Bool(e) for e in evens]
+    debug(rList)
 
     print("Joining edges for boolean expressions...")
     rForms = joinEdgeList(rList)
     pForms = joinEdgeList(pList)
     eForms = joinEdgeList(eList)
+    debug(rForms)
 
     if(render_graph):
         print("Attempting to render graph from R formula...")
@@ -141,13 +147,15 @@ if __name__ == '__main__':
     RR = pyeda.expr2bdd(rForms)
     PP = pyeda.expr2bdd(pForms)
     EE = pyeda.expr2bdd(eForms)
+    debug(RR)
 
     print("Computing BDD RR2 from BDD RR")
     RR2 = RR.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 }) & RR.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 })
+    debug(RR2)
 
     print("Performing Transitive Closure on RR2")
     RR2s = doTC(RR2) 
-    neg_RR2s = ~RR2s
+    debug(RR2s)
 
     print("Finalizing... ")
     JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
@@ -155,6 +163,9 @@ if __name__ == '__main__':
     print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
     pickle.dump( QQ, open( "QQ.pkl", "wb" ) )
 
+    debug(JJ)
+    debug(QQ)
+    
     print("\nBONUS: Test a pair! type a pair in the form 'x, y'")
     pair_str = input()
     try:
