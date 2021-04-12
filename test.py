@@ -81,10 +81,10 @@ def doTC(R):
 
         Hprime = H
         
-        ff1 = H.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 })
-        ff2 = R.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 }) 
-        ff3 = ff1 & ff2
-        H = Hprime | ff3
+        p1 = H.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 })
+        p2 = R.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 }) 
+        p = ff1 & ff2
+        H = Hprime | p
         H = H.smoothing((k0, k1, k2, k3, k4))
 
         if H.equivalent(Hprime):
@@ -142,29 +142,15 @@ if __name__ == '__main__':
     EE = pyeda.expr2bdd(eForms)
 
     print("Computing BDD RR2 from BDD RR")
-    try:
-        RR2 = RR.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 }) & RR.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 })
-    except Exception as e:
-        print("\tError: " + str(e))
-        RR2 = RR
+    RR2 = RR.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 }) & RR.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 })
 
     print("Performing Transitive Closure on RR2")
     RR2s = doTC(RR2) 
     neg_RR2s = ~RR2s
 
     print("Finalizing... ")
-    result = neg_RR2s.smoothing((i0, i1, i2, i3, i4, j0, j1, j2, j3, j4))
+    JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
+    QQ = ~( ~( JJ | ~PP).smoothing((i0, i1, i2, i3, i4)) )
+    print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
 
-    try:
-        JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
-        QQ = ~( ~( JJ | ~PP).smoothing((i0, i1, i2, i3, i4)) )
-        print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
-    except Exception as e:
-        print("\tError: " + str(e))
         
-
-    result = ~result
-
-    # Finally, assert the result
-    #print(f"\n → for all nodes i, j ∈ S,  i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
-    print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in one or more steps in G?: \n∴{result.equivalent(True)}\n")
