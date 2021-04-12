@@ -2,6 +2,7 @@ import pyeda.inter as pyeda
 from functools import reduce
 from math import sqrt
 from itertools import count, islice
+import pickle
 
 render_graph = True
 
@@ -152,5 +153,18 @@ if __name__ == '__main__':
     JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
     QQ = ~( ~( JJ | ~PP).smoothing((i0, i1, i2, i3, i4)) )
     print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
+    pickle.dump( QQ, open( "QQ.pkl", "wb" ) )
 
-        
+    print("\nBONUS: Test a pair! type a pair in the form 'x, y'")
+    pair_str = input()
+    try:
+        x = int(pair_str.split(', ')[0])
+        y = int(pair_str.split(', ')[1])
+        xBool = num2Bool(x)
+        yBool = num2Bool(y)
+
+        QQexpr = pyeda.bdd2expr(QQ)
+
+    except Exception as e:
+        print(e)
+        print("Error... Quitting...")
