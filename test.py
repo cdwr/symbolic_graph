@@ -83,7 +83,7 @@ def doTC(R):
         
         p1 = H.compose({j0:k0, j1:k1, j2:k2, j3:k3, j4:k4 })
         p2 = R.compose({i0:k0, i1:k1, i2:k2, i3:k3, i4:k4 }) 
-        p = ff1 & ff2
+        p = p1 & p2
         H = Hprime | p
         H = H.smoothing((k0, k1, k2, k3, k4))
 
