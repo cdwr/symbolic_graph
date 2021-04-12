@@ -5,7 +5,7 @@ from itertools import count, islice
 import pickle
 
 render_graph = False
-debug = True
+isDebug = False
 
 def edge2Bool(i, j):
 
@@ -111,7 +111,7 @@ def renderGraph(func):
 
 
 def debug(obj):
-    if debug:
+    if isDebug:
         print(str(obj))
 
 if __name__ == '__main__':
@@ -161,11 +161,8 @@ if __name__ == '__main__':
     JJ = (~RR2s & EE).smoothing((j0, j1, j2, j3, j4))
     QQ = ~( ~( JJ | ~PP).smoothing((i0, i1, i2, i3, i4)) )
     print(f"\n → for all nodes i ∈ Prime there is a node j ∈ Even, such that i can reach j in an even number of steps: \n∴{QQ.equivalent(True)}\n")
-    pickle.dump( QQ, open( "QQ.pkl", "wb" ) )
 
-    debug(JJ)
-    debug(QQ)
-    
+
     print("\nBONUS: Test a pair! type a pair in the form 'x, y'")
     pair_str = input()
     try:
