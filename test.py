@@ -168,10 +168,7 @@ if __name__ == '__main__':
     try:
         x = int(pair_str.split(', ')[0])
         y = int(pair_str.split(', ')[1])
-        xBool = num2Bool(x)
-        yBool = num2Bool(y)
 
-        QQexpr = pyeda.bdd2expr(QQ)
 
     except Exception as e:
         print(e)
